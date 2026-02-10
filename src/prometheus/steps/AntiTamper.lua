@@ -110,6 +110,7 @@ function AntiTamper:apply(ast, pipeline)
             valid = valid and c >= 2;
         ]]
     end
+
     code = code .. [[
     local gmatch = string.gmatch;
     local err = function() error("Tamper Detected!") end;
