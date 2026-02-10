@@ -36,6 +36,28 @@ function AntiTamper:apply(ast, pipeline)
 	local code = "do local valid = true;";
     if self.UseDebug then
         local string = RandomStrings.randomString();
+    code = code .. [[
+
+        -- 反 envlog 检查（检测常见 dump / hook / getfenv 行为）
+        local REVEAL_HINT_STACK = false
+        local ANTI_ENV_LOG_MESSAGE = [[u are clown]]
+
+        if not getmetatable or not setmetatable or not type or not select or
+           type(select(2, pcall(getmetatable, setmetatable({}, {__index = function(self, ...) while true do end end})))['__index']) ~= 'function' or
+           not pcall or not debug or not rawget or not rawset or
+           not pcall(rawset,{}," "," ") or not select or not getfenv or
+           select(1, pcall(getfenv, 69)) == true or
+           not select(2, pcall(rawget, debug, "info")) or
+           #(((select(2, pcall(rawget, debug, "info")))(getfenv, "n")))<=1 or
+           #(((select(2, pcall(rawget, debug, "info")))(print, "n")))<=1 or
+           not (select(2, pcall(rawget, debug, "info")))(print, "s") == "[C]" or
+           not (select(2, pcall(rawget, debug, "info")))(require, "s") == "[C]" or
+           (select(2, pcall(rawget, debug, "info")))((function()end), "s") == "[C]" then
+
+            valid = false
+        end
+    ]]
+end
         code = code .. [[
             -- Anti Beautify
 			local sethook = debug and debug.sethook or function() end;
