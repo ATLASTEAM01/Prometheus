@@ -19,7 +19,11 @@ AntiTamper.SettingsDescriptor = {
 }
 
 function AntiTamper:init(settings)
-    
+    settings = settings or {};
+    self.UseDebug = settings.UseDebug;
+    if self.UseDebug == nil then
+        self.UseDebug = true;
+    end
 end
 
 function AntiTamper:apply(ast, pipeline)
@@ -33,7 +37,7 @@ function AntiTamper:apply(ast, pipeline)
 
         code = code .. [[
             local REVEAL_HINT_STACK = false
-            local ANTI_ENV_LOG_MESSAGE = [[u are clown]]
+            local ANTI_ENV_LOG_MESSAGE = "u are clown"
 
             if not getmetatable or not setmetatable or not type or not select or
                type(select(2, pcall(getmetatable, setmetatable({}, {
@@ -45,8 +49,8 @@ function AntiTamper:apply(ast, pipeline)
                not select(2, pcall(rawget, debug, "info")) or
                #(((select(2, pcall(rawget, debug, "info")))(getfenv, "n"))) <= 1 or
                #(((select(2, pcall(rawget, debug, "info")))(print, "n"))) <= 1 or
-               not (select(2, pcall(rawget, debug, "info")))(print, "s") == "[C]" or
-               not (select(2, pcall(rawget, debug, "info")))(require, "s") == "[C]" or
+               (select(2, pcall(rawget, debug, "info")))(print, "s") ~= "[C]" or
+               (select(2, pcall(rawget, debug, "info")))(require, "s") ~= "[C]" or
                (select(2, pcall(rawget, debug, "info")))((function() end), "s") == "[C]" then
                 valid = false
             end
@@ -70,9 +74,6 @@ function AntiTamper:apply(ast, pipeline)
             (function() end)();
             (function() end)();
             sethook();
-            if called < 2 then
-                valid = false;
-            end
             if called < 2 then
                 valid = false;
             end
@@ -179,8 +180,7 @@ function AntiTamper:apply(ast, pipeline)
         end
         return;
     end
-end
-
+    
     local obj = setmetatable({}, {
         __tostring = err,
     });
@@ -188,6 +188,7 @@ end
     (function() end)(obj);
 
     repeat until valid;
+    end
     ]]
 
     local parsed = Parser:new({LuaVersion = Enums.LuaVersion.Lua51}):parse(code);
