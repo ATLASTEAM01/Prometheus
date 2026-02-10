@@ -1,9 +1,3 @@
--- This Script is Part of the Prometheus Obfuscator by Levno_710
---
--- AntiTamper.lua
---
--- This Script provides an Obfuscation Step, that breaks the script, when someone tries to tamper with it.
-
 local Step = require("prometheus.step");
 local Ast = require("prometheus.ast");
 local Scope = require("prometheus.scope");
@@ -25,7 +19,7 @@ AntiTamper.SettingsDescriptor = {
 }
 
 function AntiTamper:init(settings)
-	
+    
 end
 
 function AntiTamper:apply(ast, pipeline)
@@ -33,60 +27,56 @@ function AntiTamper:apply(ast, pipeline)
         logger:warn(string.format("\"%s\" cannot be used with PrettyPrint, ignoring \"%s\"", self.Name, self.Name));
         return ast;
     end
-	local code = "do local valid = true;";
+    local code = "do local valid = true;";
     if self.UseDebug then
-        local string = RandomStrings.randomString();
-    code = code .. [[
+        local rand_str = RandomStrings.randomString();
 
-        -- 反 envlog 检查（检测常见 dump / hook / getfenv 行为）
-        local REVEAL_HINT_STACK = false
-        local ANTI_ENV_LOG_MESSAGE = [[u are clown]]
-
-        if not getmetatable or not setmetatable or not type or not select or
-           type(select(2, pcall(getmetatable, setmetatable({}, {__index = function(self, ...) while true do end end})))['__index']) ~= 'function' or
-           not pcall or not debug or not rawget or not rawset or
-           not pcall(rawset,{}," "," ") or not select or not getfenv or
-           select(1, pcall(getfenv, 69)) == true or
-           not select(2, pcall(rawget, debug, "info")) or
-           #(((select(2, pcall(rawget, debug, "info")))(getfenv, "n")))<=1 or
-           #(((select(2, pcall(rawget, debug, "info")))(print, "n")))<=1 or
-           not (select(2, pcall(rawget, debug, "info")))(print, "s") == "[C]" or
-           not (select(2, pcall(rawget, debug, "info")))(require, "s") == "[C]" or
-           (select(2, pcall(rawget, debug, "info")))((function()end), "s") == "[C]" then
-
-            valid = false
-        end
-    ]]
-end
         code = code .. [[
-            -- Anti Beautify
-			local sethook = debug and debug.sethook or function() end;
-			local allowedLine = nil;
-			local called = 0;
-			sethook(function(s, line)
-				if not line then
-					return
-				end
-				called = called + 1;
-				if allowedLine then
-					if allowedLine ~= line then
-						sethook(error, "l", 5);
-					end
-				else
-					allowedLine = line;
-				end
-			end, "l", 5);
-			(function() end)();
-			(function() end)();
-			sethook();
-			if called < 2 then
-				valid = false;
-			end
+            local REVEAL_HINT_STACK = false
+            local ANTI_ENV_LOG_MESSAGE = [[u are clown]]
+
+            if not getmetatable or not setmetatable or not type or not select or
+               type(select(2, pcall(getmetatable, setmetatable({}, {
+                   __index = function(self, ...) while true do end end
+               })))['__index']) ~= 'function' or
+               not pcall or not debug or not rawget or not rawset or
+               not pcall(rawset, {}, " ", " ") or not select or not getfenv or
+               select(1, pcall(getfenv, 69)) == true or
+               not select(2, pcall(rawget, debug, "info")) or
+               #(((select(2, pcall(rawget, debug, "info")))(getfenv, "n"))) <= 1 or
+               #(((select(2, pcall(rawget, debug, "info")))(print, "n"))) <= 1 or
+               not (select(2, pcall(rawget, debug, "info")))(print, "s") == "[C]" or
+               not (select(2, pcall(rawget, debug, "info")))(require, "s") == "[C]" or
+               (select(2, pcall(rawget, debug, "info")))((function() end), "s") == "[C]" then
+                valid = false
+            end
+
+            local sethook = debug and debug.sethook or function() end;
+            local allowedLine = nil;
+            local called = 0;
+            sethook(function(s, line)
+                if not line then
+                    return
+                end
+                called = called + 1;
+                if allowedLine then
+                    if allowedLine ~= line then
+                        sethook(error, "l", 5);
+                    end
+                else
+                    allowedLine = line;
+                end
+            end, "l", 5);
+            (function() end)();
+            (function() end)();
+            sethook();
+            if called < 2 then
+                valid = false;
+            end
             if called < 2 then
                 valid = false;
             end
 
-            -- Anti Function Hook
             local funcs = {pcall, string.char, debug.getinfo, string.dump}
             for i = 1, #funcs do
                 if debug.getinfo(funcs[i]).what ~= "C" then
@@ -102,16 +92,15 @@ end
                 end
             end
 
-            -- Anti Beautify
             local function getTraceback()
                 local str = (function(arg)
                     return debug.traceback(arg)
-                end)("]] .. string .. [[");
+                end)("]] .. rand_str .. [[");
                 return str;
             end
     
             local traceback = getTraceback();
-            valid = valid and traceback:sub(1, traceback:find("\n") - 1) == "]] .. string .. [[";
+            valid = valid and traceback:sub(1, traceback:find("\n") - 1) == "]] .. rand_str .. [[";
             local iter = traceback:gmatch(":(%d*):");
             local v, c = iter(), 1;
             for i in iter do
@@ -191,7 +180,6 @@ end
     end
 end
 
-    -- Anti Function Arg Hook
     local obj = setmetatable({}, {
         __tostring = err,
     });
